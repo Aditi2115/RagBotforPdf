@@ -50,8 +50,8 @@ def build_vectorstore(pdf_bytes):
         os.unlink(pdf_path)
 
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
+        chunk_size=3000,
+        chunk_overlap=300,
     )
     chunks = text_splitter.split_documents(documents)
     embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-2")
@@ -63,7 +63,18 @@ def build_vectorstore(pdf_bytes):
     )
 
 
-vectorstore = build_vectorstore(uploaded_file.getvalue())
+try:
+    vectorstore = build_vectorstore(uploaded_file.getvalue())
+except Exception as error:
+    if "429" in str(error) or "RESOURCE_EXHAUSTED" in str(error):
+        st.error(
+            "Gemini's embedding quota was reached. Wait for the quota window "
+            "to reset or use a Gemini API project with billing enabled, then "
+            "upload the PDF again."
+        )
+    else:
+        st.error(f"The PDF could not be indexed: {error}")
+    st.stop()
 
 
 # -----------------------------
