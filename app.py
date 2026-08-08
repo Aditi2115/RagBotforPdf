@@ -19,11 +19,11 @@ load_dotenv()
 # -----------------------------
 
 st.set_page_config(
-    page_title="PDF Chatbot",
+    page_title="RagBot",
     page_icon="📄"
 )
 
-st.title("📄 PDF Chatbot")
+st.title("📄 RagBot")
 st.write("Upload a PDF and ask questions about it")
 
 
