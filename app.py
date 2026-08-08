@@ -1,9 +1,13 @@
 import streamlit as st
+import os
+import tempfile
 from dotenv import load_dotenv
 
 from langchain_chroma import Chroma
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 # Load environment variables
@@ -20,27 +24,46 @@ st.set_page_config(
 )
 
 st.title("📄 PDF Chatbot")
-st.write("Ask questions about your PDF")
+st.write("Upload a PDF and ask questions about it")
 
 
 # -----------------------------
-# Local embedding model
+# Upload and index the PDF
 # -----------------------------
 
-embeddings = GoogleGenerativeAIEmbeddings(
-    model="gemini-embedding-2"
-)
+uploaded_file = st.file_uploader("Choose a PDF", type="pdf")
+
+if uploaded_file is None:
+    st.info("Upload a PDF to start chatting.")
+    st.stop()
 
 
-# -----------------------------
-# Load Chroma database
-# -----------------------------
+@st.cache_resource(show_spinner="Reading and indexing your PDF...")
+def build_vectorstore(pdf_bytes):
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as pdf_file:
+        pdf_file.write(pdf_bytes)
+        pdf_path = pdf_file.name
 
-vectorstore = Chroma(
-    collection_name="pdf_documents",
-    embedding_function=embeddings,
-    persist_directory="./chroma_db"
-)
+    try:
+        documents = PyPDFLoader(pdf_path).load()
+    finally:
+        os.unlink(pdf_path)
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
+    )
+    chunks = text_splitter.split_documents(documents)
+    embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-2")
+
+    return Chroma.from_documents(
+        chunks,
+        embedding=embeddings,
+        collection_name="uploaded_pdf",
+    )
+
+
+vectorstore = build_vectorstore(uploaded_file.getvalue())
 
 
 # -----------------------------
