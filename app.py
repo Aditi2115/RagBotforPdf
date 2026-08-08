@@ -2,7 +2,7 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 
@@ -27,8 +27,8 @@ st.write("Ask questions about your PDF")
 # Local embedding model
 # -----------------------------
 
-embeddings = OllamaEmbeddings(
-    model="nomic-embed-text"
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="gemini-embedding-2"
 )
 
 
